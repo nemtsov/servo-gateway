@@ -1,0 +1,18 @@
+{
+  "virginia": {
+    "myorg": {
+      "endpoint": "http://int.production.servo-core.virginia.myorg.example.com/",
+      "name": "My Awesome Organization"
+    },
+    "org2": {
+      "endpoint": "http://int.production.servo-core.virginia.org2.example.com/",
+      "name": "Another Awesome Organization"
+    }
+  },
+  "oregon": {
+    "myorg": {
+      "endpoint": "http://int.production.servo-core.oregon.myorg.example.com/",
+      "name": "My Awesome Organization"
+    }
+  }
+}

@@ -1,0 +1,188 @@
+{
+  "/permissions": {
+    "GET": ["owner", "user", "member"],
+    "POST": ["owner"]
+  },
+  "/permissions/:user": {
+    "GET": ["user", "member", "owner"],
+    "PUT": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/apps/:app/permissions": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["owner"]
+  },
+  "/apps/:app/permissions/:user": {
+    "GET": ["user", "member", "owner"],
+    "PUT": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/apps/:app/stacks/:stack/permissions": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["owner"]
+  },
+  "/apps/:app/stacks/:stack/permissions/:user": {
+    "GET": ["user", "member", "owner"],
+    "PUT": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/distributions/:distribution/permissions": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["owner"]
+  },
+  "/distributions/:distribution/permissions/:user": {
+    "PUT": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/distributions/:distribution/origins/:origin/permissions": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["owner"]
+  },
+  "/distributions/:distribution/origins/:origin/permissions/:user": {
+    "PUT": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/apps": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["user", "member", "owner"]
+  },
+  "/events": {
+    "GET": ["owner"]
+  },
+  "/apps/:app": {
+    "GET": ["user", "member", "owner"],
+    "PUT": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/apps/:app/events": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/apps/:app/stacks": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["user", "member", "owner"]
+  },
+  "/apps/:app/stacks/:stack": {
+    "GET": ["user", "member", "owner"],
+    "DELETE": ["owner"]
+  },
+  "/apps/:app/stacks/:stack/events": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/apps/:app/repo/branches": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/apps/:app/repo/tags": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/apps/:app/repo/commits": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/apps/:app/builds/:build": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/apps/:app/builds/:build/report": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/apps/:app/builds/:build/artifact": {
+    "GET": ["member", "owner"]
+  },
+  "/apps/:app/builds": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["user", "member", "owner"]
+  },
+  "/apps/:app/stacks/:stacks/deploys": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stacks/deploys/:deploy": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/config": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["owner"]
+  },
+  "/config/:config": {
+    "PUT": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/config/:config/plaintext": {
+    "GET": ["owner"]
+  },
+  "/apps/:app/config": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["member", "owner"]
+  },
+  "/apps/:app/config/:config": {
+    "PUT": ["member", "owner"],
+    "DELETE": ["member", "owner"]
+  },
+  "/apps/:app/config/:config/plaintext": {
+    "GET": ["owner"]
+  },
+  "/apps/:app/stacks/:stacks/config": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stacks/config/:config": {
+    "PUT": ["member", "owner"],
+    "DELETE": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stacks/config/:config/plaintext": {
+    "GET": ["owner"]
+  },
+  "/apps/:app/notifications": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["member", "owner"]
+  },
+  "/apps/:app/notifications/:notification": {
+    "PUT": ["member", "owner"],
+    "DELETE": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stack/notifications": {
+    "GET": ["user", "member", "owner"],
+    "POST": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stack/notifications/:notification": {
+    "PUT": ["member", "owner"],
+    "DELETE": ["member", "owner"]
+  },
+  "/metadata/*": {
+    "GET": ["user", "member", "owner"]
+  },
+  "/admin/*": {
+    "GET": ["owner"],
+    "PUT": ["owner"],
+    "POST": ["owner"],
+    "DELETE": ["owner"]
+  },
+  "/apps/:app/:stacks/:stack/logs": {
+    "GET": ["member", "owner"]
+  },
+  "/apps/:app/:stacks/:stack/logs/:source": {
+    "GET": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stack/workers": {
+    "GET": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stack/workers/:worker": {
+    "GET": ["member", "owner"]
+  },
+  "/apps/:app/stacks/:stack/workers/:worker/status": {
+    "GET": ["member", "owner"]
+  },
+  "/distributions": {
+    "GET": ["user", "owner"],
+    "POST": ["user", "owner"]
+  },
+  "/distributions/:distribution": {
+    "DELETE": ["member", "owner"]
+  },
+  "/distributions/:distribution/origins": {
+    "GET": ["user", "owner"],
+    "POST": ["member", "owner"]
+  },
+  "/distributions/:distribution/origins/:origin": {
+    "DELETE": ["member", "owner"],
+    "PUT": ["member", "owner"]
+  }
+}

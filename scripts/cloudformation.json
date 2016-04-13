@@ -1,0 +1,448 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Servo gateway template",
+  "Resources": {
+    "WebServerGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "AvailabilityZones": {
+          "Ref": "AZs"
+        },
+        "VPCZoneIdentifier": {
+          "Ref": "Subnets"
+        },
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfig"
+        },
+        "HealthCheckType": "ELB",
+        "HealthCheckGracePeriod": "180",
+        "MinSize": "1",
+        "MaxSize": "2",
+        "DesiredCapacity": {
+          "Ref": "InstanceCount"
+        },
+        "LoadBalancerNames": [
+          {
+            "Ref": "ElasticLoadBalancer"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "servo-gateway",
+            "PropagateAtLaunch": true
+          }
+        ]
+      },
+      "CreationPolicy": {
+        "ResourceSignal": {
+          "Timeout": "PT15M"
+        }
+      },
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MinInstancesInService": "1",
+          "MaxBatchSize": "1",
+          "PauseTime": "PT15M",
+          "WaitOnResourceSignals": "true"
+        }
+      }
+    },
+    "LaunchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "AssociatePublicIpAddress": "true",
+        "ImageId": {"Ref": "ImageId"},
+        "SecurityGroups": [
+          {
+            "Ref": "InstanceSecurityGroup"
+          }
+        ],
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "InstanceType": "m3.medium",
+        "IamInstanceProfile": {
+          "Ref": "InstanceProfile"
+        },
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -v\n",
+                "cd /home/app\n",
+                "printf \"Host github.com\\n StrictHostKeyChecking no\\n UserKnownHostsFile=/dev/null\\n HostName ssh.github.com\\n IdentityFile ~/.ssh/gateway-deploy\" >> ~/.ssh/config\n",
+                "chmod 600 ~/.ssh/config\n",
+                "touch ~/.ssh/gateway-deploy\n",
+                "echo \"",
+                {
+                  "Fn::Join" : [ "\n", { "Ref": "GitDeployKey"} ]
+                },
+                "\">> ~/.ssh/gateway-deploy\n",
+                "chmod 600 ~/.ssh/gateway-deploy\n",
+                "touch /var/log/app.log\n",
+                "chown app:app /var/log/app.log\n",
+                "git clone ",
+                {
+                  "Ref": "GitCloneUrl"
+                },
+                "\n",
+                "cd servo-gateway\n",
+                "git checkout ",
+                {
+                  "Ref": "GitCommitHash"
+                },
+                "\n",
+                "npm install\n",
+                "chown -R app:app /home/app\n",
+                "su app -l\n",
+                "PORT=53840 ",
+                "AWS_REGION=",
+                {
+                  "Ref": "AWS::Region"
+                },
+                " ",
+                "REGION=",
+                {
+                  "Fn::FindInMap": [
+                    "RegionMap",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    "name"
+                  ]
+                },
+                " ",
+                "TOKEN_SECRET=",
+                {
+                  "Ref": "TokenSecret"
+                },
+                " ",
+                "RAW_CONFIG=",
+                {
+                  "Ref" : "RawConfig"
+                },
+                " ",
+                "forever -l /var/log/app.log -a start server.js\n",
+                "yum install -y aws-cfn-bootstrap\n",
+                "/opt/aws/bin/cfn-init -v ",
+                " --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                " --resource LaunchConfig ",
+                " --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n",
+                "/opt/aws/bin/cfn-signal -e $? ",
+                " --stack ",
+                {
+                  "Ref": "AWS::StackName"
+                },
+                " --resource WebServerGroup ",
+                " --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n"
+              ]
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "Description": {
+          "Text": "Sets up gateway! :)"
+        }
+      }
+    },
+    "ElasticLoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "CrossZone": "true",
+        "SecurityGroups": [
+          {
+            "Ref": "LoadBalancerSecurityGroup"
+          }
+        ],
+        "Subnets": {
+          "Ref": "Subnets"
+        },
+        "Listeners": [
+          {
+            "LoadBalancerPort": "443",
+            "InstancePort": "443",
+            "InstanceProtocol": "HTTPS",
+            "Protocol": "HTTPS",
+            "SSLCertificateId":{
+              "Fn::Join":[
+                 "",
+                 [
+                    "arn:aws:iam::",
+                    {
+                       "Ref":"AWS::AccountId"
+                    },
+                    ":server-certificate/",
+                    {
+                       "Ref":"CertName"
+                    },
+                    ""
+                 ]
+              ]
+            }
+          },
+          {
+            "LoadBalancerPort": "80",
+            "InstancePort": "444",
+            "InstanceProtocol": "HTTPS",
+            "Protocol": "HTTP"
+          }
+        ],
+        "HealthCheck": {
+          "Target": "HTTPS:443/_health",
+          "HealthyThreshold": "2",
+          "UnhealthyThreshold": "2",
+          "Interval": "15",
+          "Timeout": "5"
+        }
+      }
+    },
+    "LoadBalancerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable HTTPS access on port 443",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "443",
+            "ToPort": "443",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "FromPort": "0",
+            "ToPort": "65535",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable HTTPS access and SSH access",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "443",
+            "ToPort": "444",
+            "SourceSecurityGroupId": {
+              "Ref": "LoadBalancerSecurityGroup"
+            }
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": {
+              "Ref": "JumpBox"
+            }
+          }
+        ]
+      }
+    },
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          "servo-gateway"
+        ]
+      }
+    },
+    "ScaleUpPolicy": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "WebServerGroup"
+        },
+        "Cooldown": "60",
+        "ScalingAdjustment": "1"
+      }
+    },
+    "ScaleDownPolicy": {
+      "Type": "AWS::AutoScaling::ScalingPolicy",
+      "Properties": {
+        "AdjustmentType": "ChangeInCapacity",
+        "AutoScalingGroupName": {
+          "Ref": "WebServerGroup"
+        },
+        "Cooldown": "60",
+        "ScalingAdjustment": "-1"
+      }
+    },
+    "CPUAlarmHigh": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "EvaluationPeriods": "2",
+        "Statistic": "Average",
+        "Threshold": "50",
+        "AlarmDescription": "Alarm if CPU too high or metric disappears indicating instance is down",
+        "Period": "60",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleUpPolicy"
+          }
+        ],
+        "Namespace": "AWS/EC2",
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "WebServerGroup"
+            }
+          }
+        ],
+        "ComparisonOperator": "GreaterThanThreshold",
+        "MetricName": "CPUUtilization"
+      }
+    },
+    "CPUAlarmLow": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Scale-down if CPU < 30% for 2 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "60",
+        "EvaluationPeriods": "2",
+        "Threshold": "30",
+        "AlarmActions": [
+          {
+            "Ref": "ScaleDownPolicy"
+          }
+        ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": {
+              "Ref": "WebServerGroup"
+            }
+          }
+        ],
+        "ComparisonOperator": "LessThanThreshold"
+      }
+    }
+  },
+  "Outputs": {
+    "URL": {
+      "Description": "URL of the website",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "ElasticLoadBalancer",
+                "DNSName"
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  },
+  "Parameters": {
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id",
+      "Description": "VpcId of your existing Virtual Private Cloud (VPC)",
+      "ConstraintDescription": "must be the VPC Id of an existing Virtual Private Cloud."
+    },
+    "ImageId": {
+      "Type": "String",
+      "Description": "AMI ID"
+    },
+    "Subnets": {
+      "Type": "List<AWS::EC2::Subnet::Id>",
+      "Description": "The list of SubnetIds in your Virtual Private Cloud (VPC)",
+      "ConstraintDescription": "must be a list of an existing subnets in the selected Virtual Private Cloud."
+    },
+    "AZs": {
+      "Type": "List<String>",
+      "Description": "The list of AvailabilityZones for your Virtual Private Cloud (VPC)",
+      "ConstraintDescription": "must be a list if valid EC2 availability zones for the selected Virtual Private Cloud"
+    },
+    "CertName": {
+      "Type": "String",
+      "Description": "The name of an existing server cert for HTTPS",
+      "ConstraintDescription": "must be the name of an existing Server Cert"
+    },
+    "KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+    },
+    "InstanceCount": {
+      "Description": "Number of EC2 instances to launch",
+      "Type": "Number",
+      "Default": "1"
+    },
+    "JumpBox": {
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    },
+    "TokenSecret": {
+      "Description": "Random Secret that will be used to encrypt passwords",
+      "Type": "String"
+    },
+    "GitDeployKey": {
+      "Description": "SSH key that has been added to an account with access to the gateway repo. (Change new lines to commas)",
+      "Type": "CommaDelimitedList"
+    },
+    "GitCloneUrl":{
+      "Description": "SSH Git Clone URL. Ex: git@github.com:dowjones/servo-gateway.git",
+      "Type": "String"
+    },
+    "GitCommitHash": {
+      "Description": "Github commithash",
+      "Type": "String"
+    },
+    "RawConfig": {
+      "Type": "String",
+      "Description": "JSON stringified config.json. This contains all the mappings for org/region->endpoint",
+      "ConstraintDescription": "Should be a valid stringified JSON"
+    }
+  },
+  "Mappings": {
+    "RegionMap": {
+      "us-east-1": {
+        "name": "virginia"
+      },
+      "us-west-2": {
+        "name": "oregon"
+      },
+      "us-west-1": {
+        "name": "california"
+      },
+      "eu-west-1": {
+        "name": "ireland"
+      }
+    }
+  }
+}

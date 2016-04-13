@@ -1,0 +1,39 @@
+{
+  "name": "servo-gateway",
+  "version": "1.0.0",
+  "description": "The permissions layer to the Servo PaaS",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dowjones/servo-gateway.git"
+  },
+  "contributors":["Chad Wintzer", "Fan Zhang", "Sameer Chauhan"],
+  "license": "MIT",
+  "main": "server.js",
+  "scripts": {
+    "test": "./node_modules/.bin/istanbul cover _mocha -- --recursive",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "async": "^1.4.0",
+    "aws-sdk": "^2.1.40",
+    "body-parser": "^1.13.2",
+    "bunyan": "^1.4.0",
+    "bunyan-prettystream": "^0.1.3",
+    "common-errors": "^0.5.1",
+    "cors": "^2.7.1",
+    "dynamodb-doc": "^1.0.0",
+    "express": "^4.13.1",
+    "jsonwebtoken": "^5.0.4",
+    "memory-cache": "^0.1.4",
+    "password-hash": "^1.2.2",
+    "request": "^2.60.0",
+    "speakeasy": "^1.0.3"
+  },
+  "devDependencies": {
+    "istanbul": "^0.4.2",
+    "mocha": "^2.4.5",
+    "proxyquire": "^1.7.4",
+    "should": "^8.2.2",
+    "sinon": "^1.17.3"
+  }
+}
